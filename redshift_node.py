@@ -1,12 +1,29 @@
-# Last Update 2022 08 11
+#  Last Update 2022 08 20
 #
-# Custom Redshift API for Cinema 4D build S26.107 @Redshift 3.5.04
+#  Custom Redshift API
 # 
-#  on devlepment
+#  Cinema 4D build S26.107 @Redshift 3.5.06
 #
 #  Autor: DunHou
+#
+#  Only For Redshift Node Materials
+#
+#  To be Continue
+#
+#=============================================
+#                  Updates
+#=============================================
+"""
+22/07/... : 功能实现 测试
+22/08/16 : 
+    适配注释 VS Code ==> Better Comments插件
+22/08/16 : 
+    引用redshift_ID包  常用ID在VsCode中自动补全。  
+    替换原始字符串定义方式  
+22/08/20 : 
+    精简删除 {未完成} 或 {未测试完成} 的函数 ==> 等待补充
 
-
+"""
 #=============================================
 #                   Libs
 #=============================================
@@ -15,27 +32,23 @@ import maxon
 import maxon.frameworks.nodespace
 import maxon.frameworks.nodes
 import maxon.frameworks.graph
-#import os
-#import sys
 import redshift_ID as rsID # Commonly Used IDs for Redshift
 #=============================================
 #                   ID
 #=============================================
-StandardMaterialAssetID = rsID.ShaderID.StandardMaterial # maxon.Id("com.redshift3d.redshift4c4d.nodes.core.standardmaterial") # standard surface node
-StandardOutputPortID = rsID.PortID.standard_outcolor # maxon.Id("com.redshift3d.redshift4c4d.nodes.core.standardmaterial.outcolor") # standard surface output
-OutputMaterialAssetID = rsID.ShaderID.Output # maxon.Id("com.redshift3d.redshift4c4d.node.output") # Output node
-OutputSurfacePortID = rsID.PortID.Output_Surface # maxon.Id("com.redshift3d.redshift4c4d.node.output.surface") # Output node surface
-OutDisplacementPortID = rsID.PortID.Output_Displacement # maxon.Id("com.redshift3d.redshift4c4d.node.output.displacement") # Output node displacement
+StandardMaterialAssetID = rsID.ShaderID.StandardMaterial                                    # maxon.Id("com.redshift3d.redshift4c4d.nodes.core.standardmaterial") # standard surface node
+StandardOutputPortID = rsID.PortID.standard_outcolor                                        # maxon.Id("com.redshift3d.redshift4c4d.nodes.core.standardmaterial.outcolor") # standard surface output
+OutputMaterialAssetID = rsID.ShaderID.Output                                                # maxon.Id("com.redshift3d.redshift4c4d.node.output") # Output node
+OutputSurfacePortID = rsID.PortID.Output_Surface                                            # maxon.Id("com.redshift3d.redshift4c4d.node.output.surface") # Output node surface
+OutDisplacementPortID = rsID.PortID.Output_Displacement                                     # maxon.Id("com.redshift3d.redshift4c4d.node.output.displacement") # Output node displacement
+ImageNodeID = rsID.StrtoMaxonID(rsID.StrNodeID("texturesampler"))                           # maxon.Id("com.redshift3d.redshift4c4d.nodes.core.texturesampler") # texture node
+ColorCorrectionNodeID = rsID.StrtoMaxonID(rsID.StrNodeID("rscolorcorrection"))              # maxon.Id("com.redshift3d.redshift4c4d.nodes.core.rscolorcorrection") # color correct
+StandardOutputPort = rsID.PortStr.standard_outcolor                                         # "com.redshift3d.redshift4c4d.nodes.core.standardmaterial.outcolor"
+OutputSurfacePort = rsID.PortStr.Output_Surface                                             # "com.redshift3d.redshift4c4d.node.output.surface"
 
-# not done yet in redshift_ID
-ImageNodeID = maxon.Id("com.redshift3d.redshift4c4d.nodes.core.texturesampler") # texture node
-ColorCorrectionNodeID = maxon.Id("com.redshift3d.redshift4c4d.nodes.core.rscolorcorrection") # color correct
-
-
-
-VectorColorDataType = "net.maxon.parametrictype.col<3,float64>"
-StandardOutputPort ="com.redshift3d.redshift4c4d.nodes.core.standardmaterial.outcolor"
-OutputSurfacePort = "com.redshift3d.redshift4c4d.node.output.surface"
+RS_NODESPACE = "com.redshift3d.redshift4c4d.class.nodespace" # node space
+RS_MATERIAL_END_NODE = "com.autodesk.Redshift.material"      # old mat
+RS_SHADER_PREFIX = "com.redshift3d.redshift4c4d.nodes.core." # prefix
 
 RS_NODESPACE = "com.redshift3d.redshift4c4d.class.nodespace" # node space
 RS_MATERIAL_END_NODE = "com.autodesk.Redshift.material"
@@ -44,12 +57,12 @@ RS_SHADER_PREFIX = "com.redshift3d.redshift4c4d.nodes.core."
 ID_PREFERENCES_NODE = 465001632 # Prefs ID
 ID_REDSHIFT = 1036219 # Redshift
 
+doc = c4d.documents.GetActiveDocument()
 #=============================================
-#              RedshiftMaterial
+#              Common Fuctions
 #=============================================
 # 确认当前渲染器是Redshift 
 # 且首选项设置为Node材质
-doc = c4d.documents.GetActiveDocument()
 def RedshiftNodeBased():
     """
     1.Check current Render Engine is Redshift
@@ -57,11 +70,9 @@ def RedshiftNodeBased():
 
     Returns:
         Tuer: True
-    """
-    doc = c4d.documents.GetActiveDocument()
+    """    
     RenderEngine = doc.GetActiveRenderData()[c4d.RDATA_RENDERENGINE]
-
-
+    
     prefs = c4d.plugins.FindPlugin(ID_PREFERENCES_NODE)
     
     if not isinstance(prefs, c4d.BaseList2D):
@@ -84,24 +95,6 @@ def RedshiftNodeBased():
             #isNode = True
             return True
 
-def RedshiftMaterial(material):
-    """
-    Creates an Redshift Material instance based on the type of the given BaseMaterial.
-
-    Parameters
-    ----------
-    material : c4d.BaseMaterial
-        BaseMaterial instance from the C4D document.
-    """
-    if material is None:
-        return None
-
-    if RedshiftNodeBased() == True:
-        return RedshiftNodeMaterial(material)
-
-    print("[WARNING] Material '%s' is not a Redshift Node Material" % material.GetName())
-    return None
-
 def GetActiveGraphModelRef() -> maxon.NodesGraphModelRef:
     """Returns the Nodes graph of the active document.
     """
@@ -122,7 +115,7 @@ def GetActiveGraphModelRef() -> maxon.NodesGraphModelRef:
 
     return graph
 
-def GetActiveNodeGraph(dispaly=False):
+def GetActiveNodeGraph(dispaly=False): 
     mat = doc.GetActiveMaterial()
     if mat is None:
         raise ValueError("Cannot get a Material")
@@ -155,8 +148,7 @@ def CreateStandardSurface(name):
 
     Returns:
         Material: Redshift Material instance
-    """
-    #doc = c4d.documents.GetActiveDocument()
+    """    
     standardMaterial = RedshiftNodeMaterial.Create(name)
     if standardMaterial is None or standardMaterial.material is None:
         raise Exception("Failed to create Redshift Standard Surface Material")
@@ -167,28 +159,8 @@ def CreateStandardSurface(name):
         standardMaterial.RemoveShader(oldrs)
         standard_surface = standardMaterial.AddShader("standardmaterial")
         standardMaterial.AddConnection(standard_surface,rsID.PortStr.standard_outcolor, output, rsID.PortStr.Output_Surface)
-        
-    #doc.InsertMaterial(standardMaterial.material)
-    #doc.SetActiveMaterial(standardMaterial.material)
-    return standardMaterial   
 
-#=============================================
-#          Simplyfy Redshift ID
-#=============================================
-# Str of node ID
-# def StrNodeID(node_name):
-#     redshift_pre = "com.redshift3d.redshift4c4d.nodes.core."
-#     realID = redshift_pre + node_name
-#     return realID
-# # Str of port ID
-# def StrPortID(node_name, port_name):
-#     redshift_pre = "com.redshift3d.redshift4c4d.nodes.core"
-#     realID = redshift_pre + node_name +  '.' + port_name
-#     return realID
-# # Make a str to maxon ID
-# def StrtoMaxonID(ID_string):
-#     realID = maxon.Id(str(ID_string))
-#     return realID
+    return standardMaterial   
 
 #=============================================
 #           Redshift Node Material
@@ -207,9 +179,7 @@ class RedshiftNodeMaterial:
             if self.graph is None:
                 print("[WARNING] Node space is not found in Node Material: %s" % self.material.GetName())
 
-#===========================
-#           新建
-#===========================
+# =====  Add  ===== #
 
     # 创建材质 ==> OK
     def Create(name):
@@ -236,7 +206,7 @@ class RedshiftNodeMaterial:
         # Return a redshift node material
         return RedshiftNodeMaterial(material)
     # 创建Shader ==> OK 
-    def AddShader(self, nodeId):
+    def AddShader(self, nodeId, useStr=True):
         """
         Adds a new shader to the graph.
 
@@ -244,46 +214,19 @@ class RedshiftNodeMaterial:
         ----------
         nodeId : str
             The Redshift node entry name.
-        name : str
-            Name of the shader node.
+        useStr : bool
+            True : only inpput node name
+            False: inpput full node id 
         """
         if self.graph is None:
             return None
-
-        shader = self.graph.AddChild("", "com.redshift3d.redshift4c4d.nodes.core." + nodeId, maxon.DataDictionary())
-
-        return shader   
-    # 创建Shader并连接到 ==> TO DO
-    def AddShaderTo(self, shader_Id, source_port, target_node, target_port):
         
-        """
-        Adds a new shader to the given port of given node.
+        if useStr == True:
+            shader = self.graph.AddChild("", "com.redshift3d.redshift4c4d.nodes.core." + nodeId, maxon.DataDictionary())
+        else:
+            shader = self.graph.AddChild("", nodeId, maxon.DataDictionary())
 
-        Parameters
-        ----------
-        nodeId : str
-            The Redshift node entry name.
-        name : str
-            Name of the shader node.
-        """
-        soure_node = self.AddShader(self, shader_Id)
-        self.AddConnection(self, soure_node, source_port, target_node, target_port)
-      # 创建Shader到连接线 ==> TO DO
-    def AddShadertoConnection(slef, shader_id, in_port, out_port, connection):
-        # to do
-        pass  
-    # ----- 常用shader ----- #
-    # 创建Texture ==> TO DO
-    def AddTexture(self,node_name,tex_path,color_space):
-        # to do
-        pass
-    # 创建Texture并连接到 ==> TO DO
-    def AddTextureTo(self, node_name, tex_path, color_space, target_node, target_port):
-
-        # to do
-        pass
-    
-    # 
+        return shader  
     # 创建color correct ==> OK
     def AddColorCorrect(self):
         """
@@ -295,21 +238,8 @@ class RedshiftNodeMaterial:
         nodeId = "rscolorcorrection"
         shader = self.graph.AddChild("", "com.redshift3d.redshift4c4d.nodes.core." + nodeId, maxon.DataDictionary())
 
-        return shader 
-    # 创建color correct并且链接到指定节点的指定端口 ==> OK
-    def AddColorCorrectTo(self, targret_shader, targrt_port):
-        node = self.AddColorCorrect()
-        outPort = "com.redshift3d.redshift4c4d.nodes.core.rscolorcorrection.outcolor"
-        return node,self.AddConnection(node, outPort, targret_shader, targrt_port) is not None
-    def AddColorCorrectToConnection(self, targret_shader, targrt_port):
-        node = self.AddColorCorrect()
-        inPort = "com.redshift3d.redshift4c4d.nodes.core.rscolorcorrection.input"
-        outPort = "com.redshift3d.redshift4c4d.nodes.core.rscolorcorrection.outcolor"
-        return self.AddConnection(node, outPort, targret_shader, targrt_port) is not None
-        
-        pass
-      
-    # 创建ramp
+        return shader     
+    # 创建ramp ==> OK
     def AddRamp(self):
         """
         Adds a new ramp shader to the graph.
@@ -321,7 +251,20 @@ class RedshiftNodeMaterial:
         shader = self.graph.AddChild("", "com.redshift3d.redshift4c4d.nodes.core." + nodeId, maxon.DataDictionary())
 
         return shader   
-    # 创建maxon noise
+    # 创建scalar ramp ==> OK
+    def AddScalarRamp(self):
+        """
+        Adds a new scalar ramp shader to the graph.
+        
+
+        """
+        if self.graph is None:
+            return None
+        nodeId = "rsscalarramp"
+        shader = self.graph.AddChild("", "com.redshift3d.redshift4c4d.nodes.core." + nodeId, maxon.DataDictionary())
+
+        return shader       
+    # 创建maxon noise ==> OK
     def AddMaxonNoise(self):
         """
         Adds a new maxonnoise shader to the graph.
@@ -332,9 +275,8 @@ class RedshiftNodeMaterial:
         nodeId = "maxonnoise"
         shader = self.graph.AddChild("", "com.redshift3d.redshift4c4d.nodes.core." + nodeId, maxon.DataDictionary())
 
-        return shader   
-
-    # 创建displacement
+        return shader      
+    # 创建displacement ==> OK
     def AddDisplacement(self):
         """
         Adds a new displacement shader to the graph.
@@ -345,53 +287,74 @@ class RedshiftNodeMaterial:
         nodeId = "displacement"
         shader = self.graph.AddChild("", "com.redshift3d.redshift4c4d.nodes.core." + nodeId, maxon.DataDictionary())
 
-        return shader   
-    # 创建texture 并通过displacement node链接到output的置换端口
-    def AddTextureToDisplacement():
-        pass
+        return shader     
+    # todo AddTexture ==> 设置贴图ok 名称ok 贴图路径ok raw\sRGB ok 
+    # todo 待完成 判断贴图并连接到指定端口 ==> 判断rough贴图到rough接口 并且设置名称和raw
 
+# =====  Add To  ===== #   
 
-
-#===========================
-#           获取
-#===========================
-    def GetPort(self):
-        if self.graph is None:
-            return None
-        #port = self.graph.GetInputs().FindChild(real_port_name)
-
-
-    # 获取端口
-    def GetShaderPort(self, shader, port_name):
+    # 创建Shader并连接到指定节点的指定端口 ==> OK
+    def AddShaderTo(self, shader_Id, shader_port, targret_shader, target_port):        
         """
-        Adds a new shader to the graph.
+        Adds a new shader to the given port of given node.
 
         Parameters
         ----------
-        shader : node
-            The shader .
+        shader_Id : str
+            The Redshift node entry name.
+        shader_port : str
+            the shader output port id
+        target_node : str
+            target shader to connect
+        target_port : str
+            target shader input port to connect
+        """
+        soure_node = self.AddShader(shader_Id)
+        self.AddConnection(soure_node, shader_port, targret_shader, target_port)
+        return soure_node   
+    # 创建color correct并且链接到指定节点的指定端口 ==> OK
+    def AddColorCorrectTo(self, targret_shader, targrt_port):
+        """
+        Adds a new color correct shader to the given port of given node.
+
+        Parameters
+        ----------
+        targret_shader : str
+            target shader to connect
+        target_port : str
+            target shader input port to connect
+        """        
+        node = self.AddColorCorrect()
+        outPort = rsID.StrPortID("rscolorcorrection", "outcolor") # "com.redshift3d.redshift4c4d.nodes.core.rscolorcorrection.outcolor"
+        return node,self.AddConnection(node, outPort, targret_shader, targrt_port) is not None   
+    
+# =====  Add Tree  ===== #   
+    
+    # todo 创建Texture节点组 ==> to check
+    # todo 创建color correct Texture节点组 ==> TO DO
+    # todo 创建bump节点组 bump node链接到brdf的置换端口 ==> to check
+    # todo 创建texture 并通过displacement node链接到output的置换端口 ==> to check
+    
+# =====  Get  ===== #   
+  
+    # 获取节点上端口
+    def GetPort(self,shader, port_name):
+        """
+        Get a port from a Shader node.
+
+        Parameters
+        ----------
+        shader : shader node
+            The shader.
         port_name : str
-            Name of the shader node.
+            The shader port.
         """
         if self.graph is None:
             return None
-
-        real_port_name = "com.redshift3d.redshift4c4d.nodes.core.standardmaterial." + port_name
-
-        if isinstance(port_name, str):            
-            port = shader.GetOutputs().FindChild(real_port_name)
-            if not self.IsPortValid(real_port_name):
-                print("[WARNING] Output port '%s' is not found on shader '%r'" % (port_name, shader))
-                return
-
-        real_port_name = "com.redshift3d.redshift4c4d.nodes.core.standardmaterial." + port_name
-        port = shader.GetInputs().FindChild(real_port_name)
-        return port
-
-
-    # 是否NodeBase
-    def IsNodeBased(self):
-        return True    
+        if not shader:
+            return None
+        port = shader.GetInputs().FindChild(port_name)
+        return port   
     # 端口合法 ==> OK
     def IsPortValid(self, port):
         """
@@ -405,6 +368,9 @@ class RedshiftNodeMaterial:
     def GetNodeName(self, node, display=False):
         """
         Retrieve the displayed name of a node.
+        
+        Parameters
+        ----------        
         Args:
             node: (maxon.GraphNode): The node to retrieve the name from.
             display: print info when display is True
@@ -423,8 +389,8 @@ class RedshiftNodeMaterial:
             nodeName = str(node)
         if display ==True :
             print(nodeName)
-        return nodeName
-    # 获取资产ID ==> OK tip:只有node有asset id
+        return nodeName    
+    # 获取资产ID ==> OK  tip:只有node有asset id
     def GetAssetId(self, shader, display=False):
         """
         Returns the asset id of the given shader.
@@ -439,7 +405,7 @@ class RedshiftNodeMaterial:
         assetId = ("%r"%res)[1:].split(",")[0]
         if display == True:
             print("AssetID = " + ("%r"%res)[1:].split(",")[0])
-        return assetId
+        return assetId  
     # 获取ShaderID ==> OK  
     def GetShaderId(self, shader):
         """
@@ -491,31 +457,23 @@ class RedshiftNodeMaterial:
             The shader node.
         paramId : int
             Id of the parameter.
-        display: print info when display is True
+        display: bool
+            print info when display is True
         """
         if shader is None or paramId is None:
             return None
-
-        # col<3,float64> data type
-        # if self.GetParamDataType(shader, paramId) == VectorColorDataType:
-        #     return shader.GetDefaultValue()
-
         # standard data type
         port = shader.GetInputs().FindChild(paramId)
         if not self.IsPortValid(port):
-            print("[WARNING] Input port '%s' is not found on shader '%r'" % (paramId, shader))
+            print("[Error] Input port '%s' is not found on shader '%r'" % (paramId, shader))
             return None
         if display == True:
             print(port.GetDefaultValue()) 
-        return port.GetDefaultValue()
-    # 获取shader所有端口属性 
-    def GetShaderValues(self, shader, paramId, display=False):
-        # to do
-        pass
-    # 获取Output Surface ==> OK 
+        return port.GetDefaultValue()    
+    # 获取Output Node==> OK 
     def GetRSOutput(self):
         """
-        Returns the Redshift material end node.
+        Returns the Redshift Output node.
         """
         if self.graph is None:
             return None
@@ -528,44 +486,17 @@ class RedshiftNodeMaterial:
                 if self.GetAssetId(shader) == OutputMaterialAssetID:
                     return shader
             return None    
-    # 获取Output置换 
-    def GetDisplacementRoot(self):
-        """
-        Returns the shader (maxon.frameworks.graph.GraphNode)
-        connected to 'displacement' root port.
-        """
-        #return self.GetRootShader("displacement")
-        if self.graph is None:
-            return None
-
-        endNode = self.GetRSOutput()
-        root_port = endNode.GetInputs().FindChild(OutDisplacementPortID)
-        if endNode is None:
-            print("[WARNING] End node is not found in Node Material: %s" % self.material.GetName())
-            return None
-        for c in root_port.GetConnections(maxon.frameworks.misc.PORT_DIR.INPUT):
-            outPort = c[0]
-            src = outPort.GetAncestor(maxon.frameworks.graph.NODE_KIND.NODE)
-            return src
-
-        return None        
     # 获取Root BRDF ==> OK  BRDF:standard surface / rs material 
     def GetRootBRDF(self):
         """
-        Returns the shader (maxon.frameworks.graph.GraphNode)
-        connected to given root port.
-
-        Parameters
-        ----------
-        rootPortId : int or str
-            The root port id.
+        Returns the shader connect to redshift output (maxon.frameworks.graph.GraphNode)
         """
         if self.graph is None:
             return None
 
         endNode = self.GetRSOutput()
         if endNode is None:
-            print("[WARNING] End node is not found in Node Material: %s" % self.material.GetName())
+            print("[Error] End node is not found in Node Material: %s" % self.material.GetName())
             return None
         
         predecessor = list()
@@ -574,45 +505,11 @@ class RedshiftNodeMaterial:
         if rootshader is None and not rootshader.IsValid() :
             raise ValueError("Cannot retrieve the inputs list of the bsdfNode node")
         #print(rootshader)
-        return rootshader
-    # 获取Shader贴图路径
-    def GetShaderTexture(self):
-        # to do
-        pass
-    # 获取选择node的子集
-    def GetSelectNodeChildren():
+        return rootshader    
+    # todo 获取Shader贴图路径 ==> to check
+    # todo 获取选择node的子集 ==> to check
 
-        # Get the Active Material
-        # ISSUE: It's possible to have the node editor editing a material even if its not active/selected (Asset Mode, Lock mode, etc)
-        mat = doc.GetActiveMaterial()
-        if mat is None:
-            raise ValueError("There is no selected BaseMaterial")
-
-        # Retrieve the reference of the material as a node Material.
-        nodeMaterial = mat.GetNodeMaterialReference()
-        if nodeMaterial is None:
-            raise ValueError("Can't retrieve nodeMaterial reference")
-
-        # Retrieve the graph corresponding to that nodeSpace.
-        graph = nodeMaterial.GetGraph(RS_NODESPACE)
-        if graph is None:
-            raise ValueError("Can't retrieve the graph of this nimbus ref")
-
-        with RSMaterialTransaction() as transaction:
-            selected_nodes = []
-            maxon.GraphModelHelper.GetSelectedNodes(graph, maxon.NODE_KIND.NODE, selected_nodes)
-            predecessors = []
-            for node in selected_nodes:
-                maxon.GraphModelHelper.GetAllPredecessors(node, maxon.NODE_KIND.NODE, predecessors)
-            for predecessor in predecessors:
-                maxon.GraphModelHelper.SelectNode(predecessor)
-
-        # Pushes an update event to Cinema 4D
-        c4d.EventAdd()
-
-#===========================
-#           设置
-#===========================
+# =====  Set  ===== #      
 
     # 设置节点名 ==> OK
     def SetShaderName(self,shader,name):
@@ -631,7 +528,6 @@ class RedshiftNodeMaterial:
         shader.SetValue(maxon.NODE.BASE.NAME, shadername)
         shader.SetValue(maxon.EffectiveName, shadername)
     # 设置属性 ==> OK 注意数据类型 ： maxon.Float64(0.2) / maxon.Color64(1,0,0)
-    # TO DO ： 增加判定，根据shader数据类型，标准化输入数据类型(maxon.type)
     def SetShaderValue(self, shader, paramId, value):
         """
         Sets the value stored in the given shader parameter.
@@ -647,11 +543,6 @@ class RedshiftNodeMaterial:
         """
         if shader is None or paramId is None:
             return None
-
-        # # vcolor custom data type
-        # if self.GetParamDataType(shader, paramId) == VectorColorDataType:
-        #     return shader.SetVColor(shader, paramId, value)
-
         # standard data type
         port = shader.GetInputs().FindChild(paramId)
         if not self.IsPortValid(port):
@@ -660,10 +551,10 @@ class RedshiftNodeMaterial:
     
         port.SetDefaultValue(value)
 
-#===========================
-#           操作
-#===========================  
-    # [private] shader list
+# =====  Modify  ===== #  
+
+    # [private] 
+    # 创建shader list
     def _CollectShaders(self, node, shaders):
         """
         Private function to collect shaders from the graph.
@@ -686,6 +577,13 @@ class RedshiftNodeMaterial:
         shaders.append(node)
     # 遍历shader ==> OK 
     def GetShaders(self,display=False):
+        """
+        Get all shaders from the graph.
+
+        Parameters
+        ----------
+        display: print shaders number when display is True
+        """
         if self.graph is None:
             return []
 
@@ -694,8 +592,6 @@ class RedshiftNodeMaterial:
         root = self.graph.GetRoot()
         for node in root.GetChildren():   
             self._CollectShaders(node, shaders) 
-            #shaders.append(node)
-        #print(shaders)
         if display == True:
             print("Shaders Num : " + str(len(shaders)-2))
         return shaders
@@ -708,7 +604,6 @@ class RedshiftNodeMaterial:
         ----------
         shader : maxon.frameworks.graph.GraphNode
             The shader node.
-        display: print info when display is True
         """
         if self.graph is None:
             return
@@ -717,17 +612,10 @@ class RedshiftNodeMaterial:
             return
 
         shader.Remove()
-    # 隐藏节点预览 ==> TO DO
-    def MutePreview(ON=True):
-        # to do
-        pass
-    # 暴露接口 ==> TO DO
-    def ExposePort(On=True):
-        pass
-
-#===========================
-#          连接线
-#===========================  
+    # todo 隐藏节点预览 ==> TO DO
+    # todo 暴露接口 ==> TO DO
+    
+# =====  Connections  ===== #  
 
     # 获取所有连接线 ==> OK 
     def GetConnections(self):
@@ -752,60 +640,20 @@ class RedshiftNodeMaterial:
                     connections.append((src, outPort, shader, inPort))
 
         return connections
-    # 获取当前node连接线 
-    # 修改时使用，添加连接线后，需要在第二个RSMaterialTransaction获取
-    def GetShaderConnection(self,shader):
-        """
-        Returns the list of connections of this shader.
-        A connection is a tuple of:
-            source shader node : maxon.frameworks.graph.GraphNode
-            source shader output port id : str
-            target shader node : maxon.frameworks.graph.GraphNode
-            target shader input port id : str
-        """
-        if self.graph is None:
-            return []
-
-        connections = []
-        
-        for inPort in shader.GetInputs().GetChildren():
-            for c in inPort.GetConnections(maxon.frameworks.misc.PORT_DIR.INPUT):
-                outPort = c[0]
-                src = outPort.GetAncestor(maxon.frameworks.graph.NODE_KIND.NODE)
-                connections.append((src, outPort, shader, inPort))
-
-        return connections
-    # 获取当前port连接线 
-    # 修改时使用，添加连接线后，需要在第二个RSMaterialTransaction获取
-    def GetPortConnection(self,port):
-        """
-        Returns the list of connections of this shader.
-        A connection is a tuple of:
-            source shader node : maxon.frameworks.graph.GraphNode
-            source shader output port id : str
-            target shader node : maxon.frameworks.graph.GraphNode
-            target shader input port id : str
-        """
-        if self.graph is None:
-            return []
-
-        connections = []        
-        
-        for c in port.GetConnections(maxon.frameworks.misc.PORT_DIR.INPUT):
-            connections.append(c)
-        return connections
+    # todo 获取当前node连接线 
+    # todo 获取当前port连接线 
     # 添加连接线 ==> OK 
     def AddConnection(self, soure_node, outPort, target_node, inPort):
         """
-        Connects the given shaders in the graph.
+        Connects the given shaders with given port.
 
         Parameters
         ----------
-        src : maxon.frameworks.graph.GraphNode
+        soure_node : maxon.frameworks.graph.GraphNode
             The source shader node.
         outPort : str
             Output port id of the source shader node.
-        dst : maxon.frameworks.graph.GraphNode
+        target_node : maxon.frameworks.graph.GraphNode
             The target shader node.
         inPort : str
             Input port id of the target shader node.
@@ -838,40 +686,6 @@ class RedshiftNodeMaterial:
 
         outPort.Connect(inPort)
         return (soure_node, outPort, target_node, inPort)
-    # 添加Output连接线 
-    # to fix : TypeError: target should be a GraphNode
-    def AddtoOutput(self, src, outPort):
-        """
-        Connects the given shader to the given root port.
-
-        Parameters
-        ----------
-        src : maxon.frameworks.graph.GraphNode
-            The source shader node.
-        outPort : str
-            Output port id of the source shader node.
-        rootPortId : int or str
-            The root port id.
-        """
-        endNode = self.GetRSOutput()        
-        return self.AddConnection(src, outPort, endNode, OutputSurfacePortID) is not None
-    # 添加Output连接线 
-    # to fix : TypeError: target should be a GraphNode
-    def AddtoDisplacement(self, src, outPort):
-        """
-        Connects the given shader to the given root port.
-
-        Parameters
-        ----------
-        src : maxon.frameworks.graph.GraphNode
-            The source shader node.
-        outPort : str
-            Output port id of the source shader node.
-        rootPortId : int or str
-            The root port id.
-        """
-        endNode = self.GetRSOutput()        
-        return self.AddConnection(src, outPort, endNode, OutDisplacementPortID) is not None
     # 删除连接线
     def RemoveConnection(self, target_node, inPort):
         """
@@ -879,7 +693,7 @@ class RedshiftNodeMaterial:
 
         Parameters
         ----------
-        dst : maxon.frameworks.graph.GraphNode
+        target_node : maxon.frameworks.graph.GraphNode
             The target shader node.
         inPort : str
             Input port id of the target shader node.
@@ -894,29 +708,43 @@ class RedshiftNodeMaterial:
             inPort_name = inPort
             inPort = target_node.GetInputs().FindChild(inPort_name)
             if not self.IsPortValid(inPort):
-                print("[WARNING] Input port '%s' is not found on shader '%r'" % (inPort_name, target_node))
+                print("[Error] Input port '%s' is not found on shader '%r'" % (inPort_name, target_node))
                 inPort = None
 
         if inPort is None:
             return None
 
         mask = maxon.frameworks.graph.Wires(maxon.frameworks.graph.WIRE_MODE.NORMAL)
-        inPort.RemoveConnections(maxon.frameworks.misc.PORT_DIR.INPUT, mask)
-    # 禁用连接线
-    def MuteConnection(self, source_port, target_port, connection):
-        def mute():
-            if connection[maxon.Wires.INHIBIT] == maxon.WIRE_MODE.NORMAL:
-                # Unmute the wire.
-                connection[maxon.Wires.INHIBIT] = maxon.WIRE_MODE.REMOVE
-            else:
-                # Mute the wire.
-                connection[maxon.Wires.INHIBIT] = maxon.WIRE_MODE.NORMAL
-            source_port.Connect(target_port, modes=connection)
-            return True
-        with RSMaterialTransaction() as transaction:
-            maxon.GraphModelHelper.GetSelectedConnections(self.graph, mute)
-            transaction.Commit()
-            c4d.EventAdd()
+        inPort.RemoveConnections(maxon.frameworks.misc.PORT_DIR.INPUT, mask)    
+    # todo 禁用连接线    
+    # 连接到Output Surface接口
+    def AddtoOutput(self, soure_node, outPort):
+        """
+        Connects the given shader to RS Output Surface port.
+
+        Parameters
+        ----------
+        soure_node : maxon.frameworks.graph.GraphNode
+            The source shader node.
+        outPort : str
+            Output port id of the source shader node.
+        """
+        endNode = self.GetRSOutput()        
+        return self.AddConnection(soure_node, outPort, endNode, OutputSurfacePortID) is not None
+    # 连接到Output置换接口
+    def AddtoDisplacement(self, soure_node, outPort):
+        """
+        Connects the given shader to RS Output Displacement port.
+
+        Parameters
+        ----------
+        soure_node : maxon.frameworks.graph.GraphNode
+            The source shader node.
+        outPort : str
+            Output port id of the source shader node.
+        """
+        rsoutput = self.GetRSOutput()        
+        return self.AddConnection(soure_node, outPort, rsoutput, OutDisplacementPortID) is not None
 
 #=============================================
 #           Redshift Transaction

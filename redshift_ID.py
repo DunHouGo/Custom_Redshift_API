@@ -1,11 +1,15 @@
-# Last Update 2022 08 14
+#  Last Update 2022 08 20
 #
-# Easy to Use Redshift ID for Cinema 4D build S26.107 @Redshift 3.5.04
+#  Easy to Use Redshift ID 
 # 
-#  on devlepment
+#  Cinema 4D build S26.107 @Redshift 3.5.06
 #
 #  Autor: DunHou
-#import c4d
+#
+#  Only For Redshift Node Materials
+#
+#  To be Continue
+#
 import maxon
 RS_SHADER_PREFIX = "com.redshift3d.redshift4c4d.nodes.core."
 RS_STANDARD_SURFACE_PREFIX = "com.redshift3d.redshift4c4d.nodes.core.standardmaterial."
@@ -14,9 +18,7 @@ RS_STANDARD_SURFACE_PREFIX = "com.redshift3d.redshift4c4d.nodes.core.standardmat
 #                   Node
 #=============================================
 
-# 命名规范 : 
-# 节点 =》 节点默认名去掉空格
-# 端口 =》 
+
 # Shader Asset ID Strings ==> commonly used
 class ShaderStr():    
     # main 
@@ -45,6 +47,7 @@ class ShaderStr():
     # Texture
     Texture = RS_SHADER_PREFIX + "texturesampler" # Texture
     Ramp = RS_SHADER_PREFIX + "rsramp" # Ramp
+    ScalarRamp = RS_SHADER_PREFIX + "rsscalarramp" # Scalar Ramp
     MaxonNoise = RS_SHADER_PREFIX + "maxonnoise" # Maxon Noise
     Fresnel = RS_SHADER_PREFIX + "fresnel" # Fresnel
     Curvature = RS_SHADER_PREFIX + "curvature" # Curvature
@@ -172,9 +175,13 @@ class PortStr():
     ss_samples = RS_STANDARD_SURFACE_PREFIX + "ss_samples"
     refr_abbe = RS_STANDARD_SURFACE_PREFIX + "refr_abbe"
     # sss
-    #
-    #   3.5.06 update random walk
-    #
+    sss_color = RS_STANDARD_SURFACE_PREFIX + "ms_color"
+    sss_weight = RS_STANDARD_SURFACE_PREFIX + "ms_amount"
+    sss_radius = RS_STANDARD_SURFACE_PREFIX + "ms_radius"
+    sss_scale = RS_STANDARD_SURFACE_PREFIX + "ms_radius_scale"
+    sss_phase = RS_STANDARD_SURFACE_PREFIX + "ms_phase"
+    sss_mode = RS_STANDARD_SURFACE_PREFIX + "ms_mode"
+    sss_samples = RS_STANDARD_SURFACE_PREFIX + "ms_samples"
     # sheen
     sheen_color = RS_STANDARD_SURFACE_PREFIX + "sheen_color"
     sheen_weight = RS_STANDARD_SURFACE_PREFIX + "sheen_weight"
@@ -237,9 +244,13 @@ class PortID():
     ss_samples = maxon.Id(PortStr.ss_samples)
     refr_abbe = maxon.Id(PortStr.refr_abbe)
     # sss
-    #
-    #   3.5.06 update random walk
-    #
+    sss_color = maxon.Id(PortStr.sss_color)
+    sss_weight = maxon.Id(PortStr.sss_weight)
+    sss_radius = maxon.Id(PortStr.sss_radius)
+    sss_scale = maxon.Id(PortStr.sss_scale)
+    sss_phase = maxon.Id(PortStr.sss_phase)
+    sss_mode = maxon.Id(PortStr.sss_mode)
+    sss_samples = maxon.Id(PortStr.sss_samples)
     # sheen
     sheen_color = maxon.Id(PortStr.sheen_color)
     sheen_weight = maxon.Id(PortStr.sheen_weight)
