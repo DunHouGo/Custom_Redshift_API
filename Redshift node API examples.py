@@ -7,7 +7,7 @@ import os
 import sys
 import maxon
 # import custom redshift node material API
-path = r"K:\MyAPI" # custom path for api lib
+path = r"H:\OneDrive\My Document\My_Custom_Libs\Custom_Redshift_API" # custom path for api lib
 if path not in sys.path:
     sys.path.append(path)
 import redshift_node as rs
@@ -72,6 +72,7 @@ if rs.RedshiftNodeBased(): # 检测是否为Redshift Node Base
             color_mix_node = redshiftMaterial.AddShaderTo("rscolormix", rsID.StrPortID("rscolormix","outcolor"), standard_surface, base_color)
             ramp_node = redshiftMaterial.AddRamp()
             cc_node = redshiftMaterial.AddColorCorrectTo(color_mix_node,mix_input1)
+            tex_node = redshiftMaterial.AddTexture('YourTex', 'abc', 'RS_INPUT_COLORSPACE_RAW')
             # connect a shader's port to another shader's port
             # 添加链接
             redshiftMaterial.AddConnection(noise_node, noise_out, color_mix_node, mix_input2)
@@ -84,7 +85,7 @@ if rs.RedshiftNodeBased(): # 检测是否为Redshift Node Base
             redshiftMaterial.SetShaderValue(standard_surface,roughness,maxon.Float64(1))
             # get connections
             # 获取链接
-            connectioninfo = redshiftMaterial.GetAllConnections()
+            connectioninfo = redshiftMaterial.GetConnections()
             # get some info
             # 查看属性
             print("standard_surface AssetID = {0}".format(redshiftMaterial.GetAssetId(standard_surface)))

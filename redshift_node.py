@@ -290,7 +290,21 @@ class RedshiftNodeMaterial:
         return shader     
     # todo AddTexture ==> 设置贴图ok 名称ok 贴图路径ok raw\sRGB ok 
     # todo 待完成 判断贴图并连接到指定端口 ==> 判断rough贴图到rough接口 并且设置名称和raw
-
+    def AddTexture(self, shadername, filepath, colorspace: str='RS_INPUT_COLORSPACE_RAW'):
+        """
+        Adds a new texture shader to the graph.
+        """
+        if self.graph is None:
+            return None
+        nodeId = "texturesampler"
+        shader = self.graph.AddChild("", "com.redshift3d.redshift4c4d.nodes.core." + nodeId, maxon.DataDictionary())
+        texPort = shader.GetInputs().FindChild("com.redshift3d.redshift4c4d.nodes.core.texturesampler.tex0")
+        texFilenamePort = texPort.FindChild('path')
+        colorspacePort = texPort.FindChild("colorspace")
+        texFilenamePort.SetDefaultValue(filepath)
+        colorspacePort.SetDefaultValue(colorspace)
+        self.SetShaderName(shader,shadername)
+        return shader 
 # =====  Add To  ===== #   
 
     # 创建Shader并连接到指定节点的指定端口 ==> OK
