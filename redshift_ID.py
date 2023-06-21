@@ -1,14 +1,15 @@
-#  Last Update 2022 08 20
+#  Last Update 2023 06 25
 #
 #  Easy to Use Redshift ID 
 # 
-#  Cinema 4D build S26.107 @Redshift 3.5.06
+#  Cinema 4D build R2023 @Redshift 3.5.16
 #
-#  Autor: DunHou
+#  Author: DunHou
+#  Updated by: HerzogVonWiesel (Jérôme Stephan)
 #
 #  Only For Redshift Node Materials
 #
-#  To be Continue
+#  To be Continued
 #
 import maxon
 RS_SHADER_PREFIX = "com.redshift3d.redshift4c4d.nodes.core."
@@ -18,8 +19,8 @@ RS_STANDARD_SURFACE_PREFIX = "com.redshift3d.redshift4c4d.nodes.core.standardmat
 #                   Node
 #=============================================
 
-
 # Shader Asset ID Strings ==> commonly used
+# You can get these IDs manually by searching for the node in the commander, showing its details, and copying the ID from the upper right "#" of the details window.
 class ShaderStr():    
     # main 
     Output = "com.redshift3d.redshift4c4d.node.output" # Output node
@@ -39,7 +40,9 @@ class ShaderStr():
 
     ColorRange = RS_SHADER_PREFIX + "rscolorrange" # Color Range node
     Colorlayer = RS_SHADER_PREFIX + "rscolorlayer" # Color Layer node
-
+    #Conversion
+    ColorSplitter = RS_SHADER_PREFIX + "rscolorsplitter" # Color Splitter node
+    #Math
     ColorInvert = RS_SHADER_PREFIX + "rsmathinvcolor" # Color Invert node
     ColorMul = RS_SHADER_PREFIX + "rsmathmul" # Color Mutiply node
     ColorMix = RS_SHADER_PREFIX + "rscolormix" # Color Mix node
@@ -53,20 +56,20 @@ class ShaderStr():
     Curvature = RS_SHADER_PREFIX + "curvature" # Curvature
     AO = RS_SHADER_PREFIX + "ambientocclusion" # AO
     WireFrame = RS_SHADER_PREFIX + "wireframe" # Wire Frame
-    # Unity
+    # Utility
     OSLShader = RS_SHADER_PREFIX + "osl" # OSL
     Triplanar = RS_SHADER_PREFIX + "triplanar" # Triplanar
     UVProjection = RS_SHADER_PREFIX + "uvprojection" # UV Projection
     StoreColorToAOV = RS_SHADER_PREFIX + "storecolortoaov" # Store Color To AOV
     RaySwitch = RS_SHADER_PREFIX + "rayswitch" # Ray Switch
     ShaderSwitch = RS_SHADER_PREFIX + "rsshaderswitch" # Shader Switch
-    # Bump and Dispplacement
+    # Bump and Displacement
     BumpMap = RS_SHADER_PREFIX + "bumpmap" # Bump Map
     BumpBlender = RS_SHADER_PREFIX + "bumpblender" # Bump Blender
     Displacement = RS_SHADER_PREFIX + "displacement" # Displacement
     DisplacementBlender = RS_SHADER_PREFIX + "displacementblender" # Displacement Blender
     RoundCorners = RS_SHADER_PREFIX + "roundcorners" # Round Corners
-    # Attributes
+    # Attributes & User Data
     State = RS_SHADER_PREFIX + "state" # State
     VertexAttribute = RS_SHADER_PREFIX + "vertexattributelookup" # Vertex Attribute
     PointAttribute = RS_SHADER_PREFIX + "particleattributelookup" # Point Attribute
@@ -95,6 +98,8 @@ class ShaderID():
 
     ColorRange = maxon.Id(ShaderStr.ColorRange) # Color Range node
     Colorlayer = maxon.Id(ShaderStr.Colorlayer) # Color Layer node
+    #Conversion
+    ColorSplitter = RS_SHADER_PREFIX + "rscolorsplitter" # Color Splitter node
 
     ColorInvert = maxon.Id(ShaderStr.ColorInvert) # Color Invert node
     ColorMul = maxon.Id(ShaderStr.ColorMul) # Color Mutiply node
@@ -110,7 +115,7 @@ class ShaderID():
     AO = maxon.Id(ShaderStr.AO) # AO
     WireFrame = maxon.Id(ShaderStr.WireFrame) # Wire Frame
 
-    # Unity
+    # Utility
     OSLShader = maxon.Id(ShaderStr.OSLShader) # OSL
     Triplanar = maxon.Id(ShaderStr.Triplanar) # Triplanar
     UVProjection = maxon.Id(ShaderStr.UVProjection) # UV Projection
@@ -276,19 +281,23 @@ class PortID():
     bump_input = maxon.Id(PortStr.bump_input)
 
 #=============================================
-#          Simplyfy Redshift ID
+#          Simplify Redshift IDs
 #=============================================
-# Str of node ID
 def StrNodeID(node_name):
-    redshift_pre = "com.redshift3d.redshift4c4d.nodes.core."
-    realID = redshift_pre + node_name
+    """
+    Returns the full ID of the node given only its name
+    """
+    realID = RS_SHADER_PREFIX + node_name
     return realID
-# Str of port ID
 def StrPortID(node_name, port_name):
-    redshift_pre = "com.redshift3d.redshift4c4d.nodes.core."
-    realID = redshift_pre + node_name +  '.' + port_name
+    """
+    Returns the full ID of a given nodes port given the port's name
+    """
+    realID = RS_SHADER_PREFIX + node_name +  '.' + port_name
     return realID
-# Make a str to maxon ID
 def StrtoMaxonID(ID_string):
+    """
+    Returns a maxon ID given an ID string
+    """
     realID = maxon.Id(str(ID_string))
     return realID
