@@ -1,4 +1,5 @@
-# Redshift-custom-API-for-Cinema-4D
+# Redshift-custom-API-for-Cinema-4D（Deprecated）
+> This library has been discontinued for maintenance. Please skip to the latest version on [renderEngine](https://github.com/DunHouGo/renderEngine)
 
 Custom API for Redshift in Cinema 4D
 
